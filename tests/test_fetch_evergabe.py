@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import requests
 
-from fetch_evergabe import get_page_title, main
+from fetch_evergabe import get_search_results, main
 
 
 def make_response(status_code, text=""):
@@ -12,36 +12,38 @@ def make_response(status_code, text=""):
     return response
 
 
-def test_get_page_title_with_status_200_returns_title():
-    response = make_response(200, "<html><head><title>Test Titel</title></head></html>")
+def test_get_search_results_with_status_200_returns_titles():
+    html = "<html><body>" + "".join(f"<h2>Treffer {i}</h2>" for i in range(1, 8)) + "</body></html>"
+    response = make_response(200, html)
 
-    title = get_page_title(response)
+    titles = get_search_results(response)
 
-    assert title == "Test Titel"
-
-
-def test_get_page_title_with_non_200_status_returns_none():
-    response = make_response(404, "<html></html>")
-
-    title = get_page_title(response)
-
-    assert title is None
+    assert titles == [f"Treffer {i}" for i in range(1, 6)]
 
 
-def test_get_page_title_without_title_tag_returns_none():
-    response = make_response(200, "<html><head></head></html>")
+def test_get_search_results_with_non_200_status_returns_empty_list():
+    response = make_response(503, "<html></html>")
 
-    title = get_page_title(response)
+    titles = get_search_results(response)
 
-    assert title is None
+    assert titles == []
 
 
-def test_get_page_title_with_empty_body_returns_none():
-    response = make_response(200, "")
+def test_get_search_results_without_headlines_returns_empty_list():
+    response = make_response(200, "<html><body><p>Kein Treffer</p></body></html>")
 
-    title = get_page_title(response)
+    titles = get_search_results(response)
 
-    assert title is None
+    assert titles == []
+
+
+def test_get_search_results_skips_empty_headlines():
+    html = "<html><body><h2></h2><h3>Echter Treffer</h3></body></html>"
+    response = make_response(200, html)
+
+    titles = get_search_results(response)
+
+    assert titles == ["Echter Treffer"]
 
 
 @patch("fetch_evergabe.requests.get")
@@ -52,3 +54,13 @@ def test_main_handles_connection_error_gracefully(mock_get, capsys):
 
     captured = capsys.readouterr()
     assert "Fehler" in captured.out
+
+
+@patch("fetch_evergabe.requests.get")
+def test_main_prints_numbered_results(mock_get, capsys):
+    mock_get.return_value = make_response(200, "<html><body><h2>BAAINBw Ausschreibung</h2></body></html>")
+
+    main()
+
+    captured = capsys.readouterr()
+    assert "1. BAAINBw Ausschreibung" in captured.out
