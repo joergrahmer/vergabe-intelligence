@@ -40,23 +40,29 @@ python src/agent.py
 # → data/vergabe_YYYYMMDD.xlsx
 ```
 
-## Standalone-Skript: evergabe-online.de Suche
-`fetch_evergabe.py` durchsucht evergabe-online.de nach einem festen Suchbegriff
-(`SEARCH_STRING` im Skript, aktuell `"BAAINBw"`) und gibt die ersten 5 Trefferüberschriften
-auf der Konsole aus.
+## Standalone-Skript: evergabe-online.de Zuschlags-Suche
+`fetch_evergabe.py` sucht auf der "Vergebene Aufträge"-Seite von evergabe-online.de
+nach einem festen Suchbegriff (`SEARCH_STRING` im Skript, aktuell `"Software"`) und
+gibt Titel + Detail-URL der ersten 5 Treffer auf der Konsole aus.
+
+Die Seite lädt Suchergebnisse per JavaScript/AJAX (Apache Wicket) nach, daher steuert
+das Skript einen echten (headless) Browser über **Playwright** statt eines einfachen
+HTTP-Requests.
 
 ```bash
 pip install -r requirements.txt
+python3 -m playwright install chromium
 python3 fetch_evergabe.py
 ```
 
 Beispielausgabe:
 ```
-1. Messumgebung für Immissionsmessungen - X/U2CE/VA021/TA212
-2. Beschaffung eines Kaltwasser-Erzeugers - X/U2CE/VA133/VC171
-3. 5,56mm x 45 2DK-1LS-1HK, 200er Gurt
-4. 6003058358-BAAINBw E2.1
-5. Herstellung und Lieferung von LS10 Leuchtköper, Fallschirm, Handabfeuerung,( MOD9163100) 38mm, PT, Einzelstern, Rot
+Titel: <Titel des 1. Treffers>
+URL: https://www.evergabe-online.de/contractAward.html?id=...
+---
+Titel: <Titel des 2. Treffers>
+URL: https://www.evergabe-online.de/contractAward.html?id=...
+---
 ```
 
 Tests (offline, ohne echten HTTP-Call):

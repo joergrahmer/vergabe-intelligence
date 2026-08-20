@@ -1,25 +1,18 @@
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
-SEARCH_URL = "https://www.evergabe-online.de/search/awardedProcedure.html?8"
+AWARDED_URL = "https://www.evergabe-online.de/search/awardedProcedure.html"
 SEARCH_STRING = "Software"
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    )
-}
+SEARCH_INPUT_SELECTOR = 'input[name="simpleSearchParametersPanel:keywordStringGroup:searchString"]'
+SUBMIT_BUTTON_SELECTOR = '[name="submitButton"]'
+RESULT_LINK_SELECTOR = 'a.text-wrap[href*="contractAward.html"]'
 
 
-def get_search_results(response, limit=5):
-    if response.status_code != 200:
-        print(f"Fehler: Statuscode {response.status_code}")
-        return []
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    links = soup.select('a.text-wrap[href*="contractAward.html"]')
+def extract_results(html, base_url, limit=5):
+    soup = BeautifulSoup(html, "html.parser")
+    links = soup.select(RESULT_LINK_SELECTOR)
 
     results = []
     for a in links:
@@ -27,21 +20,33 @@ def get_search_results(response, limit=5):
         href = a.get("href")
         if not title or not href:
             continue
-        results.append({"title": title, "url": urljoin(response.url, href)})
+        results.append({"title": title, "url": urljoin(base_url, href)})
 
     return results[:limit]
 
 
+def fetch_search_results_html(search_string=SEARCH_STRING):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.goto(AWARDED_URL)
+            page.fill(SEARCH_INPUT_SELECTOR, search_string)
+            page.click(SUBMIT_BUTTON_SELECTOR)
+            page.wait_for_selector(RESULT_LINK_SELECTOR)
+            return page.content(), page.url
+        finally:
+            browser.close()
+
+
 def main():
     try:
-        response = requests.get(
-            SEARCH_URL, params={"searchString": SEARCH_STRING}, headers=HEADERS
-        )
-    except requests.exceptions.RequestException as e:
-        print(f"Fehler: Verbindung fehlgeschlagen ({e})")
+        html, url = fetch_search_results_html()
+    except Exception as e:
+        print(f"Fehler: Suche fehlgeschlagen ({e})")
         return
 
-    results = get_search_results(response)
+    results = extract_results(html, url)
     if not results:
         print("Keine Treffer gefunden.")
         return

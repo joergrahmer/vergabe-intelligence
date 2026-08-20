@@ -1,16 +1,8 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-import requests
+from fetch_evergabe import extract_results, main
 
-from fetch_evergabe import SEARCH_URL, get_search_results, main
-
-
-def make_response(status_code, text="", url=SEARCH_URL):
-    response = Mock()
-    response.status_code = status_code
-    response.text = text
-    response.url = url
-    return response
+BASE_URL = "https://www.evergabe-online.de/search/awardedProcedure.html"
 
 
 def make_result_link(index):
@@ -20,11 +12,10 @@ def make_result_link(index):
     )
 
 
-def test_get_search_results_with_status_200_returns_titles_and_urls():
+def test_extract_results_returns_titles_and_urls():
     html = "<html><body>" + "".join(make_result_link(i) for i in range(1, 8)) + "</body></html>"
-    response = make_response(200, html)
 
-    results = get_search_results(response)
+    results = extract_results(html, BASE_URL)
 
     assert results == [
         {
@@ -35,23 +26,15 @@ def test_get_search_results_with_status_200_returns_titles_and_urls():
     ]
 
 
-def test_get_search_results_with_non_200_status_returns_empty_list():
-    response = make_response(503, "<html></html>")
+def test_extract_results_without_results_returns_empty_list():
+    html = "<html><body><p>Kein Treffer</p></body></html>"
 
-    results = get_search_results(response)
-
-    assert results == []
-
-
-def test_get_search_results_without_results_returns_empty_list():
-    response = make_response(200, "<html><body><p>Kein Treffer</p></body></html>")
-
-    results = get_search_results(response)
+    results = extract_results(html, BASE_URL)
 
     assert results == []
 
 
-def test_get_search_results_skips_links_without_title_or_href():
+def test_extract_results_skips_links_without_title_or_href():
     html = (
         '<html><body>'
         '<a class="text-wrap" href="../contractAward.html?id=0"></a>'
@@ -59,19 +42,15 @@ def test_get_search_results_skips_links_without_title_or_href():
         f'{make_result_link(1)}'
         '</body></html>'
     )
-    response = make_response(200, html)
 
-    results = get_search_results(response)
+    results = extract_results(html, BASE_URL)
 
     assert results == [
-        {
-            "title": "Treffer 1",
-            "url": "https://www.evergabe-online.de/contractAward.html?id=1",
-        }
+        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/contractAward.html?id=1"}
     ]
 
 
-def test_get_search_results_ignores_navigation_links():
+def test_extract_results_ignores_navigation_links():
     html = (
         '<html><body>'
         '<a href="/search.html">Ausschreibungen suchen</a>'
@@ -79,21 +58,17 @@ def test_get_search_results_ignores_navigation_links():
         f'{make_result_link(1)}'
         '</body></html>'
     )
-    response = make_response(200, html)
 
-    results = get_search_results(response)
+    results = extract_results(html, BASE_URL)
 
     assert results == [
-        {
-            "title": "Treffer 1",
-            "url": "https://www.evergabe-online.de/contractAward.html?id=1",
-        }
+        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/contractAward.html?id=1"}
     ]
 
 
-@patch("fetch_evergabe.requests.get")
-def test_main_handles_connection_error_gracefully(mock_get, capsys):
-    mock_get.side_effect = requests.exceptions.ConnectionError("Verbindung fehlgeschlagen")
+@patch("fetch_evergabe.fetch_search_results_html")
+def test_main_handles_fetch_error_gracefully(mock_fetch, capsys):
+    mock_fetch.side_effect = RuntimeError("Timeout")
 
     main()
 
@@ -101,9 +76,9 @@ def test_main_handles_connection_error_gracefully(mock_get, capsys):
     assert "Fehler" in captured.out
 
 
-@patch("fetch_evergabe.requests.get")
-def test_main_prints_titles_and_urls(mock_get, capsys):
-    mock_get.return_value = make_response(200, f"<html><body>{make_result_link(1)}</body></html>")
+@patch("fetch_evergabe.fetch_search_results_html")
+def test_main_prints_titles_and_urls(mock_fetch, capsys):
+    mock_fetch.return_value = (f"<html><body>{make_result_link(1)}</body></html>", BASE_URL)
 
     main()
 
@@ -111,3 +86,13 @@ def test_main_prints_titles_and_urls(mock_get, capsys):
     assert "Titel: Treffer 1" in captured.out
     assert "URL: https://www.evergabe-online.de/contractAward.html?id=1" in captured.out
     assert "---" in captured.out
+
+
+@patch("fetch_evergabe.fetch_search_results_html")
+def test_main_prints_message_when_no_results(mock_fetch, capsys):
+    mock_fetch.return_value = ("<html><body></body></html>", BASE_URL)
+
+    main()
+
+    captured = capsys.readouterr()
+    assert "Keine Treffer gefunden." in captured.out
