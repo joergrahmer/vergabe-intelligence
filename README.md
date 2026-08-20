@@ -40,6 +40,31 @@ python src/agent.py
 # → data/vergabe_YYYYMMDD.xlsx
 ```
 
+## Standalone-Skript: evergabe-online.de Suche
+`fetch_evergabe.py` durchsucht evergabe-online.de nach einem festen Suchbegriff
+(`SEARCH_STRING` im Skript, aktuell `"BAAINBw"`) und gibt die ersten 5 Trefferüberschriften
+auf der Konsole aus.
+
+```bash
+pip install -r requirements.txt
+python3 fetch_evergabe.py
+```
+
+Beispielausgabe:
+```
+1. Messumgebung für Immissionsmessungen - X/U2CE/VA021/TA212
+2. Beschaffung eines Kaltwasser-Erzeugers - X/U2CE/VA133/VC171
+3. 5,56mm x 45 2DK-1LS-1HK, 200er Gurt
+4. 6003058358-BAAINBw E2.1
+5. Herstellung und Lieferung von LS10 Leuchtköper, Fallschirm, Handabfeuerung,( MOD9163100) 38mm, PT, Einzelstern, Rot
+```
+
+Tests (offline, ohne echten HTTP-Call):
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
 ## Taxonomie
 | Code | Kategorie | PE-Fokus |
 |---|---|---|
