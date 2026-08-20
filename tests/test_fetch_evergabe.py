@@ -19,43 +19,52 @@ def make_result_link(index):
     )
 
 
-def test_get_search_results_with_status_200_returns_titles():
+def test_get_search_results_with_status_200_returns_titles_and_urls():
     html = "<html><body>" + "".join(make_result_link(i) for i in range(1, 8)) + "</body></html>"
     response = make_response(200, html)
 
-    titles = get_search_results(response)
+    results = get_search_results(response)
 
-    assert titles == [f"Treffer {i}" for i in range(1, 6)]
+    assert results == [
+        {
+            "title": f"Treffer {i}",
+            "url": f"https://www.evergabe-online.de/tenderdetails.html?id={i}",
+        }
+        for i in range(1, 6)
+    ]
 
 
 def test_get_search_results_with_non_200_status_returns_empty_list():
     response = make_response(503, "<html></html>")
 
-    titles = get_search_results(response)
+    results = get_search_results(response)
 
-    assert titles == []
+    assert results == []
 
 
 def test_get_search_results_without_results_returns_empty_list():
     response = make_response(200, "<html><body><p>Kein Treffer</p></body></html>")
 
-    titles = get_search_results(response)
+    results = get_search_results(response)
 
-    assert titles == []
+    assert results == []
 
 
-def test_get_search_results_skips_empty_result_links():
+def test_get_search_results_skips_links_without_title_or_href():
     html = (
         '<html><body>'
         '<a data-evid="search_list_result"></a>'
+        '<a data-evid="search_list_result">Ohne Href</a>'
         f'{make_result_link(1)}'
         '</body></html>'
     )
     response = make_response(200, html)
 
-    titles = get_search_results(response)
+    results = get_search_results(response)
 
-    assert titles == ["Treffer 1"]
+    assert results == [
+        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/tenderdetails.html?id=1"}
+    ]
 
 
 def test_get_search_results_ignores_navigation_links():
@@ -67,9 +76,11 @@ def test_get_search_results_ignores_navigation_links():
     )
     response = make_response(200, html)
 
-    titles = get_search_results(response)
+    results = get_search_results(response)
 
-    assert titles == ["Treffer 1"]
+    assert results == [
+        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/tenderdetails.html?id=1"}
+    ]
 
 
 @patch("fetch_evergabe.requests.get")
@@ -83,10 +94,12 @@ def test_main_handles_connection_error_gracefully(mock_get, capsys):
 
 
 @patch("fetch_evergabe.requests.get")
-def test_main_prints_numbered_results(mock_get, capsys):
+def test_main_prints_titles_and_urls(mock_get, capsys):
     mock_get.return_value = make_response(200, f"<html><body>{make_result_link(1)}</body></html>")
 
     main()
 
     captured = capsys.readouterr()
-    assert "1. Treffer 1" in captured.out
+    assert "Titel: Treffer 1" in captured.out
+    assert "URL: https://www.evergabe-online.de/tenderdetails.html?id=1" in captured.out
+    assert "---" in captured.out
