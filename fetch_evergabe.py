@@ -32,8 +32,11 @@ def fetch_search_results_html(search_string=SEARCH_STRING):
             page = browser.new_page()
             page.goto(AWARDED_URL)
             page.fill(SEARCH_INPUT_SELECTOR, search_string)
-            page.click(SUBMIT_BUTTON_SELECTOR)
-            page.wait_for_selector(RESULT_LINK_SELECTOR)
+            with page.expect_response(
+                lambda r: "submitButton" in r.url and r.request.method == "POST"
+            ):
+                page.click(SUBMIT_BUTTON_SELECTOR)
+            page.wait_for_load_state("networkidle")
             return page.content(), page.url
         finally:
             browser.close()
