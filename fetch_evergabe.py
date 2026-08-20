@@ -17,8 +17,8 @@ def get_search_results(response, limit=5):
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
-    headlines = soup.select("h2, h3")
-    titles = [h.get_text(strip=True) for h in headlines if h.get_text(strip=True)]
+    links = soup.select('a[data-evid="search_list_result"]')
+    titles = [a.get_text(strip=True) for a in links if a.get_text(strip=True)]
     return titles[:limit]
 
 
