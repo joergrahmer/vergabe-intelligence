@@ -40,6 +40,37 @@ python src/agent.py
 # → data/vergabe_YYYYMMDD.xlsx
 ```
 
+## Standalone-Skript: evergabe-online.de Zuschlags-Suche
+`fetch_evergabe.py` sucht auf der "Vergebene Aufträge"-Seite von evergabe-online.de
+nach einem festen Suchbegriff (`SEARCH_STRING` im Skript, aktuell `"Software"`) und
+gibt Titel + Detail-URL der ersten 5 Treffer auf der Konsole aus.
+
+Die Seite lädt Suchergebnisse per JavaScript/AJAX (Apache Wicket) nach, daher steuert
+das Skript einen echten (headless) Browser über **Playwright** statt eines einfachen
+HTTP-Requests.
+
+```bash
+pip install -r requirements.txt
+python3 -m playwright install chromium
+python3 fetch_evergabe.py
+```
+
+Beispielausgabe:
+```
+Titel: <Titel des 1. Treffers>
+URL: https://www.evergabe-online.de/contractAward.html?id=...
+---
+Titel: <Titel des 2. Treffers>
+URL: https://www.evergabe-online.de/contractAward.html?id=...
+---
+```
+
+Tests (offline, ohne echten HTTP-Call):
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
 ## Taxonomie
 | Code | Kategorie | PE-Fokus |
 |---|---|---|
