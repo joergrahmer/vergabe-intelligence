@@ -2,13 +2,14 @@ from unittest.mock import Mock, patch
 
 import requests
 
-from fetch_evergabe import get_search_results, main
+from fetch_evergabe import SEARCH_URL, get_search_results, main
 
 
-def make_response(status_code, text=""):
+def make_response(status_code, text="", url=SEARCH_URL):
     response = Mock()
     response.status_code = status_code
     response.text = text
+    response.url = url
     return response
 
 
@@ -28,7 +29,7 @@ def test_get_search_results_with_status_200_returns_titles_and_urls():
     assert results == [
         {
             "title": f"Treffer {i}",
-            "url": f"https://www.evergabe-online.de/tenderdetails.html?id={i}",
+            "url": f"https://www.evergabe-online.de/search/tenderdetails.html?id={i}",
         }
         for i in range(1, 6)
     ]
@@ -63,7 +64,10 @@ def test_get_search_results_skips_links_without_title_or_href():
     results = get_search_results(response)
 
     assert results == [
-        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/tenderdetails.html?id=1"}
+        {
+            "title": "Treffer 1",
+            "url": "https://www.evergabe-online.de/search/tenderdetails.html?id=1",
+        }
     ]
 
 
@@ -79,7 +83,10 @@ def test_get_search_results_ignores_navigation_links():
     results = get_search_results(response)
 
     assert results == [
-        {"title": "Treffer 1", "url": "https://www.evergabe-online.de/tenderdetails.html?id=1"}
+        {
+            "title": "Treffer 1",
+            "url": "https://www.evergabe-online.de/search/tenderdetails.html?id=1",
+        }
     ]
 
 
@@ -101,5 +108,5 @@ def test_main_prints_titles_and_urls(mock_get, capsys):
 
     captured = capsys.readouterr()
     assert "Titel: Treffer 1" in captured.out
-    assert "URL: https://www.evergabe-online.de/tenderdetails.html?id=1" in captured.out
+    assert "URL: https://www.evergabe-online.de/search/tenderdetails.html?id=1" in captured.out
     assert "---" in captured.out

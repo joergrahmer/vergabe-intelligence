@@ -3,8 +3,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-SEARCH_URL = "https://www.evergabe-online.de/search.html"
-SEARCH_STRING = "BAAINBw Software"
+SEARCH_URL = "https://www.evergabe-online.de/search/awardedProcedure.html?8"
+SEARCH_STRING = "BAAINBw"
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -27,7 +27,7 @@ def get_search_results(response, limit=5):
         href = a.get("href")
         if not title or not href:
             continue
-        results.append({"title": title, "url": urljoin(SEARCH_URL, href)})
+        results.append({"title": title, "url": urljoin(response.url, href)})
 
     return results[:limit]
 
