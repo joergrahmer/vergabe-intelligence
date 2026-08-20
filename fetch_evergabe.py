@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 
 AWARDED_URL = "https://www.evergabe-online.de/search/awardedProcedure.html"
 SEARCH_STRING = "Software"
-SEARCH_INPUT_SELECTOR = 'input[name="simpleSearchParametersPanel:keywordStringGroup:searchString"]'
+SEARCH_INPUT_SELECTOR = "#keywordString"
 SUBMIT_BUTTON_SELECTOR = '[name="submitButton"]'
 RESULT_LINK_SELECTOR = 'a.text-wrap[href*="contractAward.html"]'
 
