@@ -15,8 +15,8 @@ def make_response(status_code, text="", url=SEARCH_URL):
 
 def make_result_link(index):
     return (
-        f'<a class="text-wrap" href="./tenderdetails.html?id={index}" '
-        f'data-evid="search_list_result">Treffer {index}</a>'
+        f'<a class="text-wrap" href="../contractAward.html?id={index}">'
+        f"Treffer {index}</a>"
     )
 
 
@@ -29,7 +29,7 @@ def test_get_search_results_with_status_200_returns_titles_and_urls():
     assert results == [
         {
             "title": f"Treffer {i}",
-            "url": f"https://www.evergabe-online.de/search/tenderdetails.html?id={i}",
+            "url": f"https://www.evergabe-online.de/contractAward.html?id={i}",
         }
         for i in range(1, 6)
     ]
@@ -54,8 +54,8 @@ def test_get_search_results_without_results_returns_empty_list():
 def test_get_search_results_skips_links_without_title_or_href():
     html = (
         '<html><body>'
-        '<a data-evid="search_list_result"></a>'
-        '<a data-evid="search_list_result">Ohne Href</a>'
+        '<a class="text-wrap" href="../contractAward.html?id=0"></a>'
+        '<a class="text-wrap">Ohne Href</a>'
         f'{make_result_link(1)}'
         '</body></html>'
     )
@@ -66,7 +66,7 @@ def test_get_search_results_skips_links_without_title_or_href():
     assert results == [
         {
             "title": "Treffer 1",
-            "url": "https://www.evergabe-online.de/search/tenderdetails.html?id=1",
+            "url": "https://www.evergabe-online.de/contractAward.html?id=1",
         }
     ]
 
@@ -75,6 +75,7 @@ def test_get_search_results_ignores_navigation_links():
     html = (
         '<html><body>'
         '<a href="/search.html">Ausschreibungen suchen</a>'
+        '<a class="text-wrap" href="../tenderdetails.html?id=99">Kein Zuschlag</a>'
         f'{make_result_link(1)}'
         '</body></html>'
     )
@@ -85,7 +86,7 @@ def test_get_search_results_ignores_navigation_links():
     assert results == [
         {
             "title": "Treffer 1",
-            "url": "https://www.evergabe-online.de/search/tenderdetails.html?id=1",
+            "url": "https://www.evergabe-online.de/contractAward.html?id=1",
         }
     ]
 
@@ -108,5 +109,5 @@ def test_main_prints_titles_and_urls(mock_get, capsys):
 
     captured = capsys.readouterr()
     assert "Titel: Treffer 1" in captured.out
-    assert "URL: https://www.evergabe-online.de/search/tenderdetails.html?id=1" in captured.out
+    assert "URL: https://www.evergabe-online.de/contractAward.html?id=1" in captured.out
     assert "---" in captured.out

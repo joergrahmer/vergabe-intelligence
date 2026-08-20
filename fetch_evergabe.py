@@ -19,7 +19,7 @@ def get_search_results(response, limit=5):
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
-    links = soup.select('a[data-evid="search_list_result"]')
+    links = soup.select('a.text-wrap[href*="contractAward.html"]')
 
     results = []
     for a in links:
